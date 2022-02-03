@@ -27,11 +27,9 @@ st.write(f"""
 
 Recommendation: **{ticker_data.info['recommendationKey']}**
 
-Ask: **{ticker_data.info['ask']}** ({ticker_data.info['askSize']})\t
-Bid: **{ticker_data.info['bid']}** ({ticker_data.info['bidSize']})\t
+Ask: **{ticker_data.info['ask']}** ({ticker_data.info['askSize']})   Bid: **{ticker_data.info['bid']}** ({ticker_data.info['bidSize']})
 volume: **{ticker_data.info['volume']}** (AVG Vol: {ticker_data.info['averageVolume']})\n
-Regular Market Price: **{ticker_data.info['regularMarketPrice']}** \t
-Pre-Market Price': **{ticker_data.info['preMarketPrice']}**
+Regular Market Price: **{ticker_data.info['regularMarketPrice']}**   Pre-Market Price': **{ticker_data.info['preMarketPrice']}**
 """)
 # st.write(ticker_data.info)
 
@@ -43,11 +41,14 @@ def print_data_frame(data_frame):
 
 
 def convert_sec_to_datetime(seconds):
-    return pd.to_datetime(seconds, unit='s', utc=True).strftime('%d-%b-%Y')
+    if seconds:
+        return pd.to_datetime(seconds, unit='s', utc=True).strftime('%d-%b-%Y')
 
 
 def convert_to_percent_str(value):
-    return f"{round(value*100, 2)}%"
+    if value:
+        return f"{round(value*100, 2)}%"
+
 
 market_data = {
     'Current': [ticker_data.info['currentPrice'], 0.0],
@@ -60,21 +61,44 @@ market_data = {
 print_data_frame(market_data)
 
 
-dividend_data = {
-    'last Div': [ticker_data.info['lastDividendValue']],
-    'last Div Date': [convert_sec_to_datetime(ticker_data.info['lastDividendDate'])],
-    'exDividendDate': [convert_sec_to_datetime(ticker_data.info['exDividendDate'])],
-    'dividendYield': [convert_to_percent_str(ticker_data.info['dividendYield'])],
-}
-print_data_frame(dividend_data)
+def prepare_dividend_data(ticker_data_info):
+    dividend_data = {}
 
-target_data = {
-    'Low target': [ticker_data.info['targetLowPrice']],
-    'Median target': [ticker_data.info['targetMedianPrice']],
-    'Mean target': [ticker_data.info['targetMeanPrice']],
-    'High target': [ticker_data.info['targetHighPrice']]
-}
-print_data_frame(target_data)
+    if 'lastDividendValue' in ticker_data_info:
+        dividend_data['Last Div'] = [ticker_data_info['lastDividendValue']]
+
+    if 'lastDividendDate' in ticker_data_info:
+        dividend_data['Last Div Date'] = [convert_sec_to_datetime(ticker_data_info['lastDividendDate'])]
+
+    if 'exDividendDate' in ticker_data_info:
+        dividend_data['ex Div Date'] = [convert_sec_to_datetime(ticker_data_info['exDividendDate'])]
+
+    if 'dividendYield' in ticker_data_info:
+        dividend_data['Div Yield'] = [convert_to_percent_str(ticker_data_info['dividendYield'])]
+
+    print_data_frame(dividend_data)
+
+
+def prepare_target_data(ticker_data_info):
+    target_data = {}
+
+    if 'targetLowPrice' in ticker_data_info:
+        target_data['Low target'] = [ticker_data_info['targetLowPrice']]
+
+    if 'targetMedianPrice' in ticker_data_info:
+        target_data['Median target'] = [ticker_data_info['targetMedianPrice']]
+
+    if 'targetMeanPrice' in ticker_data_info:
+        target_data['Mean target'] = [ticker_data_info['targetMeanPrice']]
+
+    if 'targetHighPrice' in ticker_data_info:
+        target_data['High target'] = [ticker_data_info['targetHighPrice']]
+
+    print_data_frame(target_data)
+
+
+prepare_dividend_data(ticker_data.info)
+prepare_target_data(ticker_data.info)
 
 
 tickerData = yf.Ticker(ticker_symbol) # Get ticker data
