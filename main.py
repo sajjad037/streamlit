@@ -27,7 +27,8 @@ st.write(f"""
 
 Recommendation: **{ticker_data.info['recommendationKey']}**
 
-Ask: **{ticker_data.info['ask']}** ({ticker_data.info['askSize']})   Bid: **{ticker_data.info['bid']}** ({ticker_data.info['bidSize']})
+Ask: **{ticker_data.info['ask']}** ({ticker_data.info['askSize']})
+Bid: **{ticker_data.info['bid']}** ({ticker_data.info['bidSize']})\n
 volume: **{ticker_data.info['volume']}** (AVG Vol: {ticker_data.info['averageVolume']})\n
 Regular Market Price: **{ticker_data.info['regularMarketPrice']}**   Pre-Market Price': **{ticker_data.info['preMarketPrice']}**
 """)
