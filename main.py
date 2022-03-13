@@ -1,38 +1,56 @@
+"""
+    Simple Stock app for learning
+    Learning: https://aroussi.com/post/python-yahoo-finance
+    https://github.com/ranaroussi/yfinance
+"""
+
 import yfinance as yf
 import streamlit as st
 import pandas as pd
 import cufflinks as cf
 import datetime
 
-###
-## Learning: https://aroussi.com/post/python-yahoo-finance
-##        https://github.com/ranaroussi/yfinance
-####
 
+def sidebar_elements():
+    """
+    Sidebar elements
+    :return:
+    """
+    # Sidebar Header Title
+    global end_date
+    st.sidebar.subheader("Query parameters")
 
-# Sidebar
-st.sidebar.subheader('Query parameters')
-start_date = st.sidebar.date_input("Start date", datetime.date(2019, 1, 1))
-end_date = st.sidebar.date_input("End date", datetime.date(2021, 1, 31))
-ticker_list = ["AAPL", "FB", "NVDA", "HUT.TO"]
-period_list = ["None", "1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
-interval_list = ["None", "1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"]
-ticker_symbol = st.sidebar.selectbox('Stock ticker', ticker_list) # Select ticker symbol
+    # Select or enter symbol name
+    ticker_list = ["AAPL", "FB", "NVDA", "HUT.TO", "Other"]
+    ticker_symbol = st.sidebar.selectbox(
+        label="Stock ticker",
+        options=ticker_list
+    )
+    if ticker_symbol == "Other":
+        ticker_symbol = st.sidebar.text_input(label="Stock ticker")
 
-# Retrieving tickers data
-ticker_data = yf.Ticker(ticker_symbol) # Get ticker data
+    # Select period or enter date range
+    period_list = ["custom", "1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
+    period = st.sidebar.selectbox(
+        label="Select duration or period",
+        options=period_list,
+        index=5
+    )
+    ticker_start_date = None
+    end_date = None
+    if period == "custom":
+        ticker_start_date = st.sidebar.date_input("Start date", datetime.date(2019, 1, 1))
+        end_date = st.sidebar.date_input("End date", datetime.date(2021, 1, 31))
 
-st.write(f"""
-# {ticker_data.info['longName']} 
+    # Select interval
+    interval_list = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"]
+    interval = st.sidebar.selectbox(
+        label="Select interval",
+        options=interval_list,
+        index=8
+    )
 
-Recommendation: **{ticker_data.info['recommendationKey']}**
-
-Ask: **{ticker_data.info['ask']}** ({ticker_data.info['askSize']})
-Bid: **{ticker_data.info['bid']}** ({ticker_data.info['bidSize']})\n
-volume: **{ticker_data.info['volume']}** (AVG Vol: {ticker_data.info['averageVolume']})\n
-Regular Market Price: **{ticker_data.info['regularMarketPrice']}**   Pre-Market Price': **{ticker_data.info['preMarketPrice']}**
-""")
-# st.write(ticker_data.info)
+    return ticker_symbol, period, ticker_start_date, end_date, interval
 
 
 def print_data_frame(data_frame):
@@ -49,17 +67,6 @@ def convert_sec_to_datetime(seconds):
 def convert_to_percent_str(value):
     if value:
         return f"{round(value*100, 2)}%"
-
-
-market_data = {
-    'Current': [ticker_data.info['currentPrice'], 0.0],
-    'open': [ticker_data.info['open'], 0.0],
-    'Low': [ticker_data.info['dayLow'], 0.0],
-    'dayHigh': [ticker_data.info['dayHigh'], 0.0],
-    '52 Week High': [ticker_data.info['fiftyTwoWeekHigh'], 0.0],
-    '52 Week Low': [ticker_data.info['fiftyTwoWeekLow'], 0.0],
-}
-print_data_frame(market_data)
 
 
 def prepare_dividend_data(ticker_data_info):
@@ -98,37 +105,72 @@ def prepare_target_data(ticker_data_info):
     print_data_frame(target_data)
 
 
-prepare_dividend_data(ticker_data.info)
-prepare_target_data(ticker_data.info)
+# Sidebar
+ticker_symbol, period, start_date, end_date, interval = sidebar_elements()
+if ticker_symbol:
+
+    # Get ticker data
+    ticker_data = yf.Ticker(ticker_symbol)
+
+    st.write(f"""
+    # {ticker_data.info['longName']} 
+    
+    Recommendation: **{ticker_data.info['recommendationKey']}**
+    
+    Ask: **{ticker_data.info['ask']}** ({ticker_data.info['askSize']})
+    Bid: **{ticker_data.info['bid']}** ({ticker_data.info['bidSize']})\n
+    volume: **{ticker_data.info['volume']}** (AVG Vol: {ticker_data.info['averageVolume']})\n
+    Regular Market Price: **{ticker_data.info['regularMarketPrice']}**   Pre-Market Price: **{ticker_data.info['preMarketPrice']}**
+    """)
+    # st.write(ticker_data.info)
+
+    market_data = {
+        'Current': [ticker_data.info['currentPrice'], 0.0],
+        'open': [ticker_data.info['open'], 0.0],
+        'Low': [ticker_data.info['dayLow'], 0.0],
+        'dayHigh': [ticker_data.info['dayHigh'], 0.0],
+        '52 Week High': [ticker_data.info['fiftyTwoWeekHigh'], 0.0],
+        '52 Week Low': [ticker_data.info['fiftyTwoWeekLow'], 0.0],
+    }
+    print_data_frame(market_data)
+
+    prepare_dividend_data(ticker_data.info)
+    prepare_target_data(ticker_data.info)
+
+    # Get historical prices for this ticker
+    tickerDf = ticker_data.history(
+        period=period,
+        interval=interval,
+        start=start_date,
+        end=end_date
+    )
+
+    st.write('---')
+
+    # # Get data stock data from yahoo fiance
+    # ticker_data = yf.Ticker(ticker_symbol)
+
+    # Get historical stock data from yahoo fiance
+    ticker_historical_data = ticker_data.history(period="1d", start="2010-5-31", end='2020-5-31')
+    # Open High Low Close Volume Dividends stock Splits
+
+    st.line_chart(ticker_historical_data.Close)
+    st.line_chart(ticker_historical_data.Volume)
 
 
-tickerData = yf.Ticker(ticker_symbol) # Get ticker data
-tickerDf = tickerData.history(period='1d', start=start_date, end=end_date) #get the historical prices for this ticker
+    # Ticker data
+    st.header('**Ticker data**')
+    st.write(tickerDf)
 
-st.write('---')
+    # Bollinger bands
+    st.header('**Bollinger Bands**')
+    qf=cf.QuantFig(tickerDf,title='First Quant Figure',legend='top',name='GS')
+    qf.add_bollinger_bands()
+    fig = qf.iplot(asFigure=True)
+    st.plotly_chart(fig)
 
-# Get data stock data from yahoo fiance
-ticker_data = yf.Ticker(ticker_symbol)
-
-# Get historical stock data from yahoo fiance
-ticker_historical_data = ticker_data.history(period="1d", start="2010-5-31", end='2020-5-31')
-# Open High Low Close Volume Dividends stock Splits
-
-st.line_chart(ticker_historical_data.Close)
-st.line_chart(ticker_historical_data.Volume)
-
-
-# Ticker data
-st.header('**Ticker data**')
-st.write(tickerDf)
-
-# Bollinger bands
-st.header('**Bollinger Bands**')
-qf=cf.QuantFig(tickerDf,title='First Quant Figure',legend='top',name='GS')
-qf.add_bollinger_bands()
-fig = qf.iplot(asFigure=True)
-st.plotly_chart(fig)
-
+else:
+    st.write("Please enter stock ticker name.")
 
 # Web scraping of NBA player stats
 @st.cache
