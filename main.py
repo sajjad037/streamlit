@@ -34,13 +34,13 @@ def sidebar_elements():
     period = st.sidebar.selectbox(
         label="Select duration or period",
         options=period_list,
-        index=5
+        index=11
     )
     ticker_start_date = None
     end_date = None
     if period == "custom":
-        ticker_start_date = st.sidebar.date_input("Start date", datetime.date(2019, 1, 1))
-        end_date = st.sidebar.date_input("End date", datetime.date(2021, 1, 31))
+        ticker_start_date = st.sidebar.date_input("Start date", datetime.date(datetime.date.today().year - 1, 1, 1))
+        end_date = st.sidebar.date_input("End date", datetime.date.today())
 
     # Select interval
     interval_list = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"]
@@ -105,6 +105,145 @@ def prepare_target_data(ticker_data_info):
     print_data_frame(target_data)
 
 
+def get_filtered_dataframe_by_days(df, days):
+    if days > 0:
+        today = datetime.date.today()
+        from_date = today - datetime.timedelta(days=days)
+        return df.loc[(df.index >= from_date.strftime("%Y-%m-%d")) & (df.index <= today.strftime("%Y-%m-%d"))]
+    return df
+
+
+def get_min_max_from_dataframe(df):
+    return df[df.Low == df.Low.min()], df[df.High == df.High.max()]
+
+
+def prepare_max_min_states(df, days, min_max_state, interval_name):
+    df = get_filtered_dataframe_by_days(df, days)
+    if not df.empty:
+        min_data, max_data = get_min_max_from_dataframe(df)
+        min_date = min_data.index[0].strftime('%Y-%b-%d')
+        min_value = round(min_data['Low'].values[0], 2)
+        max_date = max_data.index[0].strftime('%Y-%b-%d')
+        max_value = round(max_data['High'].values[0], 2)
+
+        min_max_state["min_date"].append(min_date)
+        min_max_state["min"].append(min_value)
+        min_max_state["max_date"].append(max_date)
+        min_max_state["max"].append(max_value)
+        min_max_state["interval"].append(interval_name)
+
+
+def print_max_min_states(df):
+
+    min_max_data = {
+        "interval": [],
+        'min': [],
+        'min_date': [],
+        'max': [],
+        'max_date': [],
+    }
+
+    prepare_max_min_states(
+        df=df,
+        days=3,
+        min_max_state=min_max_data,
+        interval_name="3 Days"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=5,
+        min_max_state=min_max_data,
+        interval_name="5 Days"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=8,
+        min_max_state=min_max_data,
+        interval_name="8 days"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=13,
+        min_max_state=min_max_data,
+        interval_name="2 weeks (13D)"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=21,
+        min_max_state=min_max_data,
+        interval_name="3 weeks"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=34,
+        min_max_state=min_max_data,
+        interval_name="1 month(34D)"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=60,
+        min_max_state=min_max_data,
+        interval_name="2 months"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=89,
+        min_max_state=min_max_data,
+        interval_name="3 months(89D)"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=150,
+        min_max_state=min_max_data,
+        interval_name="5 months"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=180,
+        min_max_state=min_max_data,
+        interval_name="6 months"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=365,
+        min_max_state=min_max_data,
+        interval_name="1 year"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=730,
+        min_max_state=min_max_data,
+        interval_name="2 year"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=1095,
+        min_max_state=min_max_data,
+        interval_name="3 year"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=1825,
+        min_max_state=min_max_data,
+        interval_name="5 year"
+    )
+    prepare_max_min_states(
+        df=df,
+        days=-1,
+        min_max_state=min_max_data,
+        interval_name="Max"
+    )
+
+    # Add Empty row
+    # min_max_data["min_date"].append("")
+    # min_max_data["min"].append(0.0)
+    # min_max_data["max_date"].append("")
+    # min_max_data["max"].append(0.0)
+    # min_max_data["interval"].append(" ")
+
+    print_data_frame(min_max_data)
+
+
 # Sidebar
 ticker_symbol, period, start_date, end_date, interval = sidebar_elements()
 if ticker_symbol:
@@ -138,7 +277,7 @@ if ticker_symbol:
     prepare_target_data(ticker_data.info)
 
     # Get historical prices for this ticker
-    tickerDf = ticker_data.history(
+    ticker_dataframe = ticker_data.history(
         period=period,
         interval=interval,
         start=start_date,
@@ -146,25 +285,35 @@ if ticker_symbol:
     )
 
     st.write('---')
+    st.header("Past min max states")
+    print_max_min_states(ticker_dataframe)
+    st.write('---')
+
+    # Ticker historical data
+    ticker_data_header = f"**Ticker data ({period}) **"
+    if period == "custom":
+        ticker_data_header = f"**Ticker data (from {start_date} to {end_date}) **"
+    st.header(ticker_data_header)
+    st.write(ticker_dataframe)
+    st.write('---')
 
     # # Get data stock data from yahoo fiance
     # ticker_data = yf.Ticker(ticker_symbol)
 
     # Get historical stock data from yahoo fiance
-    ticker_historical_data = ticker_data.history(period="1d", start="2010-5-31", end='2020-5-31')
+    # ticker_historical_data = ticker_data.history(period="1d", start="2010-5-31", end='2020-5-31')
+    ticker_historical_data = get_filtered_dataframe_by_days(
+        df=ticker_dataframe,
+        days=3650
+    )
     # Open High Low Close Volume Dividends stock Splits
 
     st.line_chart(ticker_historical_data.Close)
     st.line_chart(ticker_historical_data.Volume)
 
-
-    # Ticker data
-    st.header('**Ticker data**')
-    st.write(tickerDf)
-
     # Bollinger bands
     st.header('**Bollinger Bands**')
-    qf=cf.QuantFig(tickerDf,title='First Quant Figure',legend='top',name='GS')
+    qf=cf.QuantFig(ticker_dataframe, title='First Quant Figure', legend='top', name='GS')
     qf.add_bollinger_bands()
     fig = qf.iplot(asFigure=True)
     st.plotly_chart(fig)
