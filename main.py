@@ -9,6 +9,11 @@ import streamlit as st
 import pandas as pd
 import cufflinks as cf
 import datetime
+from utils.helper import (
+    print_data_frame,
+    convert_sec_to_datetime,
+    convert_to_percent_str
+)
 
 
 def sidebar_elements():
@@ -23,18 +28,19 @@ def sidebar_elements():
     # Select or enter symbol name
     ticker_list = ["AAPL", "FB", "NVDA", "HUT.TO", "Other"]
     ticker_symbol = st.sidebar.selectbox(
-        label="Stock ticker",
+        label="Select stock ticker",
         options=ticker_list
     )
     if ticker_symbol == "Other":
-        ticker_symbol = st.sidebar.text_input(label="Stock ticker")
+        ticker_symbol = st.sidebar.text_input(label="Enter stock ticker (Yahoo Finance)", key="txt_ticker_1")
 
     # Select period or enter date range
     period_list = ["custom", "1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
     period = st.sidebar.selectbox(
         label="Select duration or period",
         options=period_list,
-        index=11
+        index=11,
+        key="sb_period_1"
     )
     ticker_start_date = None
     end_date = None
@@ -47,26 +53,11 @@ def sidebar_elements():
     interval = st.sidebar.selectbox(
         label="Select interval",
         options=interval_list,
-        index=8
+        index=8,
+        key="sb_interval_1"
     )
 
     return ticker_symbol, period, ticker_start_date, end_date, interval
-
-
-def print_data_frame(data_frame):
-    df = pd.DataFrame(data_frame)
-    # df.reset_index(drop=True, inplace=True)
-    st.dataframe(df)
-
-
-def convert_sec_to_datetime(seconds):
-    if seconds:
-        return pd.to_datetime(seconds, unit='s', utc=True).strftime('%d-%b-%Y')
-
-
-def convert_to_percent_str(value):
-    if value:
-        return f"{round(value*100, 2)}%"
 
 
 def prepare_dividend_data(ticker_data_info):
@@ -84,7 +75,7 @@ def prepare_dividend_data(ticker_data_info):
     if 'dividendYield' in ticker_data_info:
         dividend_data['Div Yield'] = [convert_to_percent_str(ticker_data_info['dividendYield'])]
 
-    print_data_frame(dividend_data)
+    print_data_frame(dividend_data, st=st)
 
 
 def prepare_target_data(ticker_data_info):
@@ -102,7 +93,7 @@ def prepare_target_data(ticker_data_info):
     if 'targetHighPrice' in ticker_data_info:
         target_data['High target'] = [ticker_data_info['targetHighPrice']]
 
-    print_data_frame(target_data)
+    print_data_frame(target_data, st=st)
 
 
 def get_filtered_dataframe_by_days(df, days):
@@ -241,7 +232,7 @@ def print_max_min_states(df):
     # min_max_data["max"].append(0.0)
     # min_max_data["interval"].append(" ")
 
-    print_data_frame(min_max_data)
+    print_data_frame(min_max_data, st=st)
 
 
 # Sidebar
@@ -271,7 +262,7 @@ if ticker_symbol:
         '52 Week High': [ticker_data.info['fiftyTwoWeekHigh'], 0.0],
         '52 Week Low': [ticker_data.info['fiftyTwoWeekLow'], 0.0],
     }
-    print_data_frame(market_data)
+    print_data_frame(market_data, st=st)
 
     prepare_dividend_data(ticker_data.info)
     prepare_target_data(ticker_data.info)
@@ -293,15 +284,15 @@ if ticker_symbol:
     ticker_data_header = f"**Ticker data ({period}) **"
     if period == "custom":
         ticker_data_header = f"**Ticker data (from {start_date} to {end_date}) **"
-    st.header(ticker_data_header)
+    st.header(f"{ticker_data_header} Table")
     st.write(ticker_dataframe)
     st.write('---')
 
-    # # Get data stock data from yahoo fiance
-    # ticker_data = yf.Ticker(ticker_symbol)
+    # Ticker historical data Plot
+    st.header(f"{ticker_data_header} Plot")
+    st.line_chart(ticker_dataframe.Close)
+    st.write('---')
 
-    # Get historical stock data from yahoo fiance
-    # ticker_historical_data = ticker_data.history(period="1d", start="2010-5-31", end='2020-5-31')
     ticker_historical_data = get_filtered_dataframe_by_days(
         df=ticker_dataframe,
         days=3650
@@ -317,6 +308,7 @@ if ticker_symbol:
     qf.add_bollinger_bands()
     fig = qf.iplot(asFigure=True)
     st.plotly_chart(fig)
+    st.write('---')
 
 else:
     st.write("Please enter stock ticker name.")
