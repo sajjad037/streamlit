@@ -36,7 +36,7 @@ def sidebar_elements():
 
     # Select period or enter date range
     period_list = ["custom", "1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
-    period = st.sidebar.selectbox(
+    time_period = st.sidebar.selectbox(
         label="Select duration or period",
         options=period_list,
         index=11,
@@ -44,20 +44,20 @@ def sidebar_elements():
     )
     ticker_start_date = None
     end_date = None
-    if period == "custom":
+    if time_period == "custom":
         ticker_start_date = st.sidebar.date_input("Start date", datetime.date(datetime.date.today().year - 1, 1, 1))
         end_date = st.sidebar.date_input("End date", datetime.date.today())
 
     # Select interval
     interval_list = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"]
-    interval = st.sidebar.selectbox(
+    selected_interval = st.sidebar.selectbox(
         label="Select interval",
         options=interval_list,
         index=8,
         key="sb_interval_1"
     )
 
-    return ticker_symbol, period, ticker_start_date, end_date, interval
+    return ticker_symbol, time_period, ticker_start_date, end_date, selected_interval
 
 
 def prepare_dividend_data(ticker_data_info):
@@ -235,6 +235,74 @@ def print_max_min_states(df):
     print_data_frame(min_max_data, st=st)
 
 
+def print_support(df):
+    support_data = {
+        # "interval": [],
+        'value': [],
+        'recent_date': [],
+        'support_retain_days': [],
+
+    }
+    resistance_data = {
+        # "interval": [],
+        'value': [],
+        'recent_date': [],
+        'resistance_retain_days': [],
+
+    }
+    default_size = 1500
+    size = df.size
+    print(f"size: {size}")
+    support_data_dict = {}
+    resistance_data_dict = {}
+    if size > default_size:
+        size = default_size
+
+    for x in range(1, size):
+        minimal_df = df.tail(n=x)
+
+        # Compute support data
+        support_df = minimal_df[minimal_df.Low == minimal_df.Low.min()]
+        support_date = support_df.index[0].strftime('%Y-%b-%d')
+        support_value = round(support_df['Low'].values[0], 2)
+        if support_value not in support_data_dict:
+            support_data_dict[support_value] = {}
+            support_data_dict[support_value]["recent_date"] = support_date
+            support_data_dict[support_value]["count"] = 1
+        else:
+            support_data_dict[support_value]["count"] += 1
+
+        # Compute resistance data
+        resistance_df = minimal_df[minimal_df.High == minimal_df.High.max()]
+        resistance_date = resistance_df.index[0].strftime('%Y-%b-%d')
+        resistance_value = round(resistance_df['High'].values[0], 2)
+        if resistance_value not in resistance_data_dict:
+            resistance_data_dict[resistance_value] = {}
+            resistance_data_dict[resistance_value]["recent_date"] = resistance_date
+            resistance_data_dict[resistance_value]["count"] = 1
+        else:
+            resistance_data_dict[resistance_value]["count"] += 1
+
+    # Build support data frame
+    for key in support_data_dict:
+        support_data["value"].append(key)
+        support_data["recent_date"].append(support_data_dict[key]["recent_date"])
+        support_data["support_retain_days"].append(support_data_dict[key]["count"])
+
+    # Build resistance data frame
+    for key in resistance_data_dict:
+        resistance_data["value"].append(key)
+        resistance_data["recent_date"].append(resistance_data_dict[key]["recent_date"])
+        resistance_data["resistance_retain_days"].append(resistance_data_dict[key]["count"])
+
+    st.header("Past Support")
+    print_data_frame(support_data, st=st)
+    st.write('---')
+
+    st.header("Past Resistance")
+    print_data_frame(resistance_data, st=st)
+    st.write('---')
+
 # Sidebar
 ticker_symbol, period, start_date, end_date, interval = sidebar_elements()
 if ticker_symbol:
@@ -279,6 +347,8 @@ if ticker_symbol:
     st.header("Past min max states")
     print_max_min_states(ticker_dataframe)
     st.write('---')
+
+    print_support(ticker_dataframe)
 
     # Ticker historical data
     ticker_data_header = f"**Ticker data ({period}) **"
