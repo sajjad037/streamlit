@@ -64,16 +64,16 @@ def prepare_dividend_data(ticker_data_info):
     dividend_data = {}
 
     if 'lastDividendValue' in ticker_data_info:
-        dividend_data['Last Div'] = [ticker_data_info['lastDividendValue']]
+        dividend_data['Last Div'] = [ticker_data_info.get('lastDividendValue')]
 
     if 'lastDividendDate' in ticker_data_info:
-        dividend_data['Last Div Date'] = [convert_sec_to_datetime(ticker_data_info['lastDividendDate'])]
+        dividend_data['Last Div Date'] = [convert_sec_to_datetime(ticker_data_info.get('lastDividendDate'))]
 
     if 'exDividendDate' in ticker_data_info:
-        dividend_data['ex Div Date'] = [convert_sec_to_datetime(ticker_data_info['exDividendDate'])]
+        dividend_data['ex Div Date'] = [convert_sec_to_datetime(ticker_data_info.get('exDividendDate'))]
 
     if 'dividendYield' in ticker_data_info:
-        dividend_data['Div Yield'] = [convert_to_percent_str(ticker_data_info['dividendYield'])]
+        dividend_data['Div Yield'] = [convert_to_percent_str(ticker_data_info.get('dividendYield'))]
 
     print_data_frame(dividend_data, st=st)
 
@@ -82,16 +82,16 @@ def prepare_target_data(ticker_data_info):
     target_data = {}
 
     if 'targetLowPrice' in ticker_data_info:
-        target_data['Low target'] = [ticker_data_info['targetLowPrice']]
+        target_data['Low target'] = [ticker_data_info.get('targetLowPrice')]
 
     if 'targetMedianPrice' in ticker_data_info:
-        target_data['Median target'] = [ticker_data_info['targetMedianPrice']]
+        target_data['Median target'] = [ticker_data_info.get('targetMedianPrice')]
 
     if 'targetMeanPrice' in ticker_data_info:
-        target_data['Mean target'] = [ticker_data_info['targetMeanPrice']]
+        target_data['Mean target'] = [ticker_data_info.get('targetMeanPrice')]
 
     if 'targetHighPrice' in ticker_data_info:
-        target_data['High target'] = [ticker_data_info['targetHighPrice']]
+        target_data['High target'] = [ticker_data_info.get('targetHighPrice')]
 
     print_data_frame(target_data, st=st)
 
@@ -113,9 +113,9 @@ def prepare_max_min_states(df, days, min_max_state, interval_name):
     if not df.empty:
         min_data, max_data = get_min_max_from_dataframe(df)
         min_date = min_data.index[0].strftime('%Y-%b-%d')
-        min_value = round(min_data['Low'].values[0], 2)
+        min_value = round(min_data.get('Low').values[0], 2)
         max_date = max_data.index[0].strftime('%Y-%b-%d')
-        max_value = round(max_data['High'].values[0], 2)
+        max_value = round(max_data.get('High').values[0], 2)
 
         min_max_state["min_date"].append(min_date)
         min_max_state["min"].append(min_value)
@@ -264,7 +264,7 @@ def print_support(df):
         # Compute support data
         support_df = minimal_df[minimal_df.Low == minimal_df.Low.min()]
         support_date = support_df.index[0].strftime('%Y-%b-%d')
-        support_value = round(support_df['Low'].values[0], 2)
+        support_value = round(support_df.get('Low').values[0], 2)
         if support_value not in support_data_dict:
             support_data_dict[support_value] = {}
             support_data_dict[support_value]["recent_date"] = support_date
@@ -275,7 +275,7 @@ def print_support(df):
         # Compute resistance data
         resistance_df = minimal_df[minimal_df.High == minimal_df.High.max()]
         resistance_date = resistance_df.index[0].strftime('%Y-%b-%d')
-        resistance_value = round(resistance_df['High'].values[0], 2)
+        resistance_value = round(resistance_df.get('High').values[0], 2)
         if resistance_value not in resistance_data_dict:
             resistance_data_dict[resistance_value] = {}
             resistance_data_dict[resistance_value]["recent_date"] = resistance_date
@@ -309,26 +309,26 @@ if ticker_symbol:
 
     # Get ticker data
     ticker_data = yf.Ticker(ticker_symbol)
-
+    st.write(ticker_data.info)
     st.write(f"""
-    # {ticker_data.info['longName']} 
+    # {ticker_data.info.get('longName')} 
     
-    Recommendation: **{ticker_data.info['recommendationKey']}**
+    Recommendation: **{ticker_data.info.get('recommendationKey')}**
     
-    Ask: **{ticker_data.info['ask']}** ({ticker_data.info['askSize']})
-    Bid: **{ticker_data.info['bid']}** ({ticker_data.info['bidSize']})\n
-    volume: **{ticker_data.info['volume']}** (AVG Vol: {ticker_data.info['averageVolume']})\n
-    Regular Market Price: **{ticker_data.info['regularMarketPrice']}**   Pre-Market Price: **{ticker_data.info['preMarketPrice']}**
+    Ask: **{ticker_data.info.get('ask')}** ({ticker_data.info.get('askSize')})
+    Bid: **{ticker_data.info.get('bid')}** ({ticker_data.info.get('bidSize')})\n
+    volume: **{ticker_data.info.get('volume')}** (AVG Vol: {ticker_data.info.get('averageVolume')})\n
+    Regular Market Price: **{ticker_data.info.get('regularMarketPrice')}**   Pre-Market Price: **{ticker_data.info.get('preMarketPrice')}**
     """)
     # st.write(ticker_data.info)
 
     market_data = {
-        'Current': [ticker_data.info['currentPrice'], 0.0],
-        'open': [ticker_data.info['open'], 0.0],
-        'Low': [ticker_data.info['dayLow'], 0.0],
-        'dayHigh': [ticker_data.info['dayHigh'], 0.0],
-        '52 Week High': [ticker_data.info['fiftyTwoWeekHigh'], 0.0],
-        '52 Week Low': [ticker_data.info['fiftyTwoWeekLow'], 0.0],
+        'Current': [ticker_data.info.get('currentPrice'), 0.0],
+        'open': [ticker_data.info.get('open'), 0.0],
+        'Low': [ticker_data.info.get('dayLow'), 0.0],
+        'dayHigh': [ticker_data.info.get('dayHigh'), 0.0],
+        '52 Week High': [ticker_data.info.get('fiftyTwoWeekHigh'), 0.0],
+        '52 Week Low': [ticker_data.info.get('fiftyTwoWeekLow'), 0.0],
     }
     print_data_frame(market_data, st=st)
 
@@ -384,18 +384,18 @@ else:
     st.write("Please enter stock ticker name.")
 
 # Web scraping of NBA player stats
-@st.cache
-def load_data(year):
-    url = "https://www.basketball-reference.com/leagues/NBA_" + str(year) + "_per_game.html"
-    html = pd.read_html(url, header=0)
-    df = html[0]
-    print("Printing DF:")
-    print(type(df))
-    raw = df.drop(df[df.Age == 'Age'].index)  # Deletes repeating headers in content
-    raw = raw.fillna(0)
-    playerstats = raw.drop(['Rk'], axis=1)
-    return playerstats
-
-
-playerstats = load_data(2020)
+# @st.cache
+# def load_data(year):
+#     url = "https://www.basketball-reference.com/leagues/NBA_" + str(year) + "_per_game.html"
+#     html = pd.read_html(url, header=0)
+#     df = html[0]
+#     print("Printing DF:")
+#     print(type(df))
+#     raw = df.drop(df[df.Age == 'Age').index)  # Deletes repeating headers in content
+#     raw = raw.fillna(0)
+#     playerstats = raw.drop(.get('Rk'), axis=1)
+#     return playerstats
+#
+#
+# playerstats = load_data(2020)
 # print(playerstats)
