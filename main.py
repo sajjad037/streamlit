@@ -309,7 +309,6 @@ if ticker_symbol:
 
     # Get ticker data
     ticker_data = yf.Ticker(ticker_symbol)
-    st.write(ticker_data.info)
     st.write(f"""
     # {ticker_data.info.get('longName')} 
     
